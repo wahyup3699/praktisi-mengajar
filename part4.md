@@ -7,6 +7,8 @@ Berikut adalah struktur direktori proyek yang akan dibuat:
 
 ```
 src/main/java/com/example/belajar_spring
+    ├── config
+    │   └── LoginInterceptor.java
     ├── controller
     ├── model
     ├── service
@@ -31,6 +33,7 @@ src/main/resources/
     │   └── js/
     └── application.properties
 ```
+
 
 ---
 
@@ -159,8 +162,63 @@ public class User {
 ```
 
 ---
+### 2.1. Membuat Middleware Login Session
+#### LoginInterceptor
+```java name=src/main/java/com/example/belajar_spring/config/LoginInterceptor.java
+package com.example.belajar_spring.config;
 
-### 2.2. Membuat Service
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
+
+@Component
+public class LoginInterceptor implements HandlerInterceptor {
+
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        // Allow access to login and registration pages
+        String uri = request.getRequestURI();
+        if (uri.startsWith("/auth") || uri.equals("/")) {
+            return true;
+        }
+
+        // Check if user is logged in
+        Object userSession = request.getSession().getAttribute("loggedInUser");
+        if (userSession == null) {
+            response.sendRedirect("/auth/login");
+            return false;
+        }
+
+        return true;
+    }
+}
+```
+
+#### WebConfig
+```java name=src/main/java/com/example/belajar_spring/config/WebConfig.java
+package com.example.belajar_spring.config;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Autowired
+    private LoginInterceptor loginInterceptor;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(loginInterceptor).addPathPatterns("/**");
+    }
+}
+```
+
+---
+### 2.3. Membuat Service
 
 #### Service Mahasiswa
 ```java name=src/main/java/com/example/belajar_spring/service/MahasiswaService.java
@@ -262,7 +320,7 @@ public class UserService {
 
 ---
 
-### 2.3. Membuat Controller
+### 2.4. Membuat Controller
 
 #### Controller Mahasiswa
 ```java name=src/main/java/com/example/belajar_spring/controller/MahasiswaController.java
@@ -360,6 +418,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
 @Controller
 @RequestMapping("/auth")
 public class AuthController {
@@ -372,12 +433,21 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public String login(@RequestParam String username, @RequestParam String password, Model model) {
+    public String login(@RequestParam String username, @RequestParam String password, HttpServletRequest request, Model model) {
         if (userService.login(username, password)) {
+            HttpSession session = request.getSession();
+            session.setAttribute("loggedInUser", username);
             return "redirect:/mahasiswa";
         }
         model.addAttribute("error", "Username atau password salah!");
         return "auth/login";
+    }
+
+    @GetMapping("/logout")
+    public String logout(HttpServletRequest request) {
+        HttpSession session = request.getSession();
+        session.invalidate();
+        return "redirect:/auth/login";
     }
 
     @GetMapping("/register")
@@ -398,7 +468,7 @@ public class AuthController {
 
 ---
 
-### 2.4. Membuat Template HTML
+### 2.5. Membuat Template HTML
 
 #### Template Login (`login.html`)
 ```html name=src/main/resources/templates/auth/login.html
