@@ -314,8 +314,41 @@ public class MahasiswaController {
 
 #### Controller Jurusan
 ```java name=src/main/java/com/example/belajar_spring/controller/JurusanController.java
-// (isi seperti pada contoh sebelumnya)
+package com.example.belajar_spring.controller;
+
+import com.example.belajar_spring.model.Jurusan;
+import com.example.belajar_spring.service.JurusanService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+@Controller
+@RequestMapping("/jurusan")
+public class JurusanController {
+    @Autowired
+    private JurusanService jurusanService;
+
+    @GetMapping
+    public String listJurusan(Model model) {
+        model.addAttribute("jurusanList", jurusanService.getAllJurusan());
+        return "jurusan/index";
+    }
+
+    @GetMapping("/add")
+    public String addJurusanForm(Model model) {
+        model.addAttribute("jurusan", new Jurusan());
+        return "jurusan/add";
+    }
+
+    @PostMapping("/add")
+    public String saveJurusan(@ModelAttribute Jurusan jurusan) {
+        jurusanService.saveJurusan(jurusan);
+        return "redirect:/jurusan";
+    }
+}
 ```
+
 
 #### Controller Login dan Register
 ```java name=src/main/java/com/example/belajar_spring/controller/AuthController.java
