@@ -319,7 +319,48 @@ public class MahasiswaController {
 
 #### Controller Login dan Register
 ```java name=src/main/java/com/example/belajar_spring/controller/AuthController.java
-// (isi seperti pada contoh sebelumnya)
+package com.example.belajar_spring.controller;
+
+import com.example.belajar_spring.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+@Controller
+@RequestMapping("/auth")
+public class AuthController {
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/login")
+    public String loginForm() {
+        return "auth/login";
+    }
+
+    @PostMapping("/login")
+    public String login(@RequestParam String username, @RequestParam String password, Model model) {
+        if (userService.login(username, password)) {
+            return "redirect:/mahasiswa";
+        }
+        model.addAttribute("error", "Username atau password salah!");
+        return "auth/login";
+    }
+
+    @GetMapping("/register")
+    public String registerForm() {
+        return "auth/register";
+    }
+
+    @PostMapping("/register")
+    public String register(@RequestParam String username, @RequestParam String password, Model model) {
+        if (userService.register(username, password)) {
+            return "redirect:/auth/login";
+        }
+        model.addAttribute("error", "Username sudah ada!");
+        return "auth/register";
+    }
+}
 ```
 
 ---
@@ -328,37 +369,145 @@ public class MahasiswaController {
 
 #### Template Login (`login.html`)
 ```html name=src/main/resources/templates/auth/login.html
-// (isi seperti pada contoh sebelumnya)
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="layout/base :: main-content">
+<body>
+    <h2>Login</h2>
+    <form th:action="@{/auth/login}" method="post">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">Login</button>
+        <p class="mt-3">Belum punya akun? <a href="/auth/register">Register</a></p>
+        <p th:if="${error}" th:text="${error}" class="text-danger"></p>
+    </form>
+</body>
+</html>
 ```
 
 #### Template Register (`register.html`)
 ```html name=src/main/resources/templates/auth/register.html
-// (isi seperti pada contoh sebelumnya)
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="layout/base :: main-content">
+<body>
+    <h2>Register</h2>
+    <form th:action="@{/auth/register}" method="post">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">Register</button>
+        <p th:if="${error}" th:text="${error}" class="text-danger"></p>
+    </form>
+</body>
+</html>
 ```
 
 #### Layout Base (`base.html`)
 ```html name=src/main/resources/templates/layout/base.html
-// (isi seperti pada contoh sebelumnya)
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD Mahasiswa</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <div th:replace="layout/header :: header"></div>
+        <main>
+            <div th:replace="~{::main-content}"></div>
+        </main>
+        <div th:replace="layout/footer :: footer"></div>
+    </div>
+</body>
+</html>
 ```
 
 #### Header (`header.html`)
 ```html name=src/main/resources/templates/layout/header.html
-// (isi seperti pada contoh sebelumnya)
+<header>
+    <h1 class="text-center">Pendaftaran Mahasiswa Baru</h1>
+    <nav>
+        <a href="/mahasiswa" class="btn btn-primary">Mahasiswa</a>
+        <a href="/jurusan" class="btn btn-secondary">Jurusan</a>
+    </nav>
+</header>
 ```
 
 #### Footer (`footer.html`)
 ```html name=src/main/resources/templates/layout/footer.html
-// (isi seperti pada contoh sebelumnya)
+<footer class="text-center mt-4">
+    <p>&copy; 2025 Pendaftaran Mahasiswa Baru. All Rights Reserved.</p>
+</footer>
 ```
 
 #### Daftar Mahasiswa (`index.html`)
 ```html name=src/main/resources/templates/mahasiswa/index.html
-// (isi seperti pada contoh sebelumnya)
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="layout/base :: main-content">
+<body>
+    <h2>Daftar Mahasiswa</h2>
+    <a href="/mahasiswa/add" class="btn btn-success">Tambah Mahasiswa</a>
+    <table class="table mt-3">
+        <thead>
+            <tr>
+                <th>Nama</th>
+                <th>Email</th>
+                <th>Jurusan</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+        <tr th:each="mahasiswa : ${mahasiswaList}">
+            <td th:text="${mahasiswa.nama}"></td>
+            <td th:text="${mahasiswa.email}"></td>
+            <td th:text="${mahasiswa.jurusan}"></td>
+            <td>
+                <a th:href="@{/mahasiswa/delete/{id}(id=${mahasiswa.id})}" class="btn btn-danger">Hapus</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</body>
+</html>
 ```
 
 #### Form Tambah Mahasiswa (`add.html`)
 ```html name=src/main/resources/templates/mahasiswa/add.html
-// (isi seperti pada contoh sebelumnya)
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="layout/base :: main-content">
+<body>
+    <h2>Tambah Mahasiswa</h2>
+    <form th:action="@{/mahasiswa/add}" method="post">
+        <div class="form-group">
+            <label for="nama">Nama</label>
+            <input id="nama" name="nama" type="text" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="jurusan">Jurusan</label>
+            <select id="jurusan" name="jurusan" class="form-control">
+                <option th:each="jurusan : ${jurusanList}" th:value="${jurusan.namaJurusan}" th:text="${jurusan.namaJurusan}"></option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">Simpan</button>
+    </form>
+</body>
+</html>
 ```
 
 ---
@@ -368,9 +517,9 @@ public class MahasiswaController {
    ```bash
    mvn spring-boot:run
    ```
-2. Akses fitur login di `http://localhost:8080/auth/login`, registrasi di `http://localhost:8080/auth/register`, dan daftar mahasiswa di `http://localhost:8080/mahasiswa`.
+2. Akses di `http://localhost:8080`.
 
 ---
 
 ## 4. Kesimpulan
-Dengan tutorial ini, Anda telah berhasil membuat aplikasi CRUD Mahasiswa Baru, fitur login, dan register menggunakan Java Spring Boot, Thymeleaf, dan Bootstrap tanpa menggunakan database.
+Dengan tutorial ini, Anda telah berhasil membuat aplikasi CRUD Mahasiswa Baru menggunakan Java Spring Boot, Thymeleaf, dan Bootstrap tanpa menggunakan database.
